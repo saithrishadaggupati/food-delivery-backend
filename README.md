@@ -1,5 +1,31 @@
 # Food Delivery Backend
 
+
+
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+
+
+
+
+![Django](https://img.shields.io/badge/Django-REST-green)
+
+
+
+
+![Docker](https://img.shields.io/badge/Docker-Compose-blue)
+
+
+
+
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-orange)
+
+
+
+
+![Redis](https://img.shields.io/badge/Redis-caching-red)
+
+
+
 Honestly, I built this because I was tired of only following tutorials. I wanted 
 to build something on my own and actually understand how a backend works — not 
 just copy code and hope it runs.
@@ -8,6 +34,31 @@ I use Swiggy a lot. I started wondering what actually happens when I place an
 order. How does the app know who I am? How does it make sure my order goes to 
 the right restaurant? I couldn't answer any of that, so I decided to build my 
 own version and find out.
+
+---
+
+## Try it live
+
+- **API:** https://food-delivery-backend-4rl9.onrender.com
+- **Swagger docs:** https://food-delivery-backend-4rl9.onrender.com/api/docs/
+
+---
+
+## What this does
+
+A backend API for a food delivery platform. Three user roles — customer, 
+restaurant owner, delivery agent. Owners create restaurants and menus. Customers 
+place orders. Orders move through a full lifecycle: pending → confirmed → 
+preparing → out for delivery → delivered.
+
+**What's under the hood:**
+- JWT authentication — register, login, protected routes
+- Role-based access control — a customer token cannot create a restaurant. An owner can only edit their own restaurant
+- Redis caching on restaurant list with cache invalidation on write
+- Pagination on restaurant list
+- 8 pytest tests
+- Dockerized — PostgreSQL + Redis + Django running together
+- Swagger docs live
 
 ---
 
@@ -24,31 +75,9 @@ that didn't.
 
 ---
 
-## What this does
-
-A backend API for a food delivery platform. Three user roles — customer, 
-restaurant owner, delivery agent. Owners create restaurants and menus. Customers 
-place orders. Orders move through a full lifecycle: pending → confirmed → 
-preparing → out for delivery → delivered.
-
-The part I found most interesting was role-based access control. A customer token 
-cannot create a restaurant. An owner can only update orders from their own 
-restaurant. That distinction between authentication and authorization — I'd heard 
-both words before but didn't really understand the difference until I had to 
-implement it myself.
-
----
-
-## Try it live
-
-- **API:** https://food-delivery-backend-4rl9.onrender.com
-- **Swagger docs:** https://food-delivery-backend-4rl9.onrender.com/api/docs/
-
----
-
 ## Stack
 
-Python · Django · Django REST Framework · PostgreSQL · JWT · Docker · Swagger · Render
+Python · Django · Django REST Framework · PostgreSQL · JWT · Redis · Docker · Swagger · Render
 
 ---
 
