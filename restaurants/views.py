@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.core.cache import cache
 from django.conf import settings
 from .models import Restaurant, MenuItem
@@ -11,22 +12,11 @@ from .serializers import RestaurantSerializer, MenuItemSerializer
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def restaurant_list(request):
-    from rest_framework.pagination import PageNumberPagination
-
-    cache_key = 'restaurant_list'
-    cached_data = cache.get(cache_key)
-
-    if cached_data:
-        return Response(cached_data)
-
     restaurants = Restaurant.objects.filter(is_active=True)
-    
     paginator = PageNumberPagination()
     paginator.page_size = 10
     result_page = paginator.paginate_queryset(restaurants, request)
     serializer = RestaurantSerializer(result_page, many=True)
-    
-    cache.set(cache_key, serializer.data, settings.CACHE_TTL)
     return paginator.get_paginated_response(serializer.data)
 
 
