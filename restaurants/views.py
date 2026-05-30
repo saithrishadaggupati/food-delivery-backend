@@ -11,6 +11,8 @@ from .serializers import RestaurantSerializer, MenuItemSerializer
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def restaurant_list(request):
+    from rest_framework.pagination import PageNumberPagination
+
     cache_key = 'restaurant_list'
     cached_data = cache.get(cache_key)
 
@@ -18,9 +20,14 @@ def restaurant_list(request):
         return Response(cached_data)
 
     restaurants = Restaurant.objects.filter(is_active=True)
-    serializer = RestaurantSerializer(restaurants, many=True)
+    
+    paginator = PageNumberPagination()
+    paginator.page_size = 10
+    result_page = paginator.paginate_queryset(restaurants, request)
+    serializer = RestaurantSerializer(result_page, many=True)
+    
     cache.set(cache_key, serializer.data, settings.CACHE_TTL)
-    return Response(serializer.data)
+    return paginator.get_paginated_response(serializer.data)
 
 
 @api_view(['GET'])
