@@ -2,6 +2,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from django.core.cache import cache
+from django.conf import settings
 from .models import Restaurant, MenuItem
 from .serializers import RestaurantSerializer, MenuItemSerializer
 
@@ -9,9 +11,15 @@ from .serializers import RestaurantSerializer, MenuItemSerializer
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def restaurant_list(request):
-    # Anyone can browse restaurants
+    cache_key = 'restaurant_list'
+    cached_data = cache.get(cache_key)
+
+    if cached_data:
+        return Response(cached_data)
+
     restaurants = Restaurant.objects.filter(is_active=True)
     serializer = RestaurantSerializer(restaurants, many=True)
+    cache.set(cache_key, serializer.data, settings.CACHE_TTL)
     return Response(serializer.data)
 
 
@@ -29,7 +37,6 @@ def restaurant_detail(request, pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def restaurant_create(request):
-    # Only restaurant owners can create
     if request.user.role != 'restaurant_owner':
         return Response({'error': 'Only restaurant owners can create restaurants'}, status=status.HTTP_403_FORBIDDEN)
     serializer = RestaurantSerializer(data=request.data)
@@ -42,7 +49,6 @@ def restaurant_create(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def menu_item_create(request, pk):
-    # Only the owner of that restaurant can add menu items
     try:
         restaurant = Restaurant.objects.get(pk=pk, owner=request.user)
     except Restaurant.DoesNotExist:
