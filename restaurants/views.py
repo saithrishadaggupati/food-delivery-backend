@@ -42,6 +42,7 @@ def restaurant_create(request):
     serializer = RestaurantSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(owner=request.user)
+        cache.delete('restaurant_list')
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
