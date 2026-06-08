@@ -6,6 +6,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.core.cache import cache
 from django.conf import settings
 
+from core.permissions import IsRestaurantOwner
 from .models import Restaurant, MenuItem
 from .serializers import RestaurantSerializer, MenuItemSerializer
 
@@ -53,18 +54,11 @@ def restaurant_detail(request, pk):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsRestaurantOwner])
 def restaurant_create(request):
-    if request.user.role != 'restaurant_owner':
-        return Response(
-            {'error': 'Only restaurant owners can create restaurants'},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
     serializer = RestaurantSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(owner=request.user)
-        # Invalidate all cached pages when new restaurant is added
         cache.delete_pattern('restaurant_list_page_*')
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -72,7 +66,7 @@ def restaurant_create(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsRestaurantOwner])
 def menu_item_create(request, pk):
     try:
         restaurant = Restaurant.objects.get(pk=pk, owner=request.user)
@@ -85,7 +79,6 @@ def menu_item_create(request, pk):
     serializer = MenuItemSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(restaurant=restaurant)
-        # Invalidate cache since menu changed
         cache.delete_pattern('restaurant_list_page_*')
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

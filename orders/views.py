@@ -3,17 +3,25 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db import transaction
+from django.core.cache import cache
 
+from core.permissions import IsCustomer, IsRestaurantOwner
 from .models import Order, OrderItem
 from .serializers import OrderSerializer
 from restaurants.models import Restaurant, MenuItem
 
+IDEMPOTENCY_TTL = 60 * 60 * 24  # 24 hours
+
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsCustomer])
 def place_order(request):
-    if request.user.role != 'customer':
-        return Response({'error': 'Only customers can place orders'}, status=status.HTTP_403_FORBIDDEN)
+    idempotency_key = request.headers.get('Idempotency-Key')
+    if idempotency_key:
+        cache_key = f'idempotency_{request.user.id}_{idempotency_key}'
+        cached_response = cache.get(cache_key)
+        if cached_response:
+            return Response(cached_response, status=status.HTTP_200_OK)
 
     restaurant_id = request.data.get('restaurant_id')
     delivery_address = request.data.get('delivery_address')
@@ -63,11 +71,16 @@ def place_order(request):
     except ValueError as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+    response_data = OrderSerializer(order).data
+
+    if idempotency_key:
+        cache.set(cache_key, response_data, IDEMPOTENCY_TTL)
+
+    return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsCustomer])
 def my_orders(request):
     orders = Order.objects.filter(
         customer=request.user
@@ -82,7 +95,7 @@ def my_orders(request):
 
 
 @api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsRestaurantOwner])
 def update_order_status(request, pk):
     try:
         order = Order.objects.select_related('restaurant').get(
