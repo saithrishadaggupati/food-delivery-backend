@@ -1,3 +1,4 @@
+from .tasks import send_order_confirmation, notify_restaurant
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -75,6 +76,20 @@ def place_order(request):
 
     if idempotency_key:
         cache.set(cache_key, response_data, IDEMPOTENCY_TTL)
+
+    # Fire background tasks — non-blocking
+    send_order_confirmation.delay(
+        order_id=order.id,
+        customer_email=request.user.email,
+        restaurant_name=restaurant.name,
+        total_amount=str(order.total_amount)
+    )
+    notify_restaurant.delay(
+        order_id=order.id,
+        restaurant_name=restaurant.name,
+        total_amount=str(order.total_amount),
+        item_count=len(order_items)
+    )
 
     return Response(response_data, status=status.HTTP_201_CREATED)
 
