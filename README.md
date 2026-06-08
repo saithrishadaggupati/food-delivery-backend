@@ -3,8 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.12-blue) ![Django](https://img.shields.io/badge/Django-REST-green) ![Docker](https://img.shields.io/badge/Docker-Compose-blue) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-PostGIS-orange) ![Redis](https://img.shields.io/badge/Redis-caching-red) ![Celery](https://img.shields.io/badge/Celery-async-green)
 
 I use Swiggy every day and one day I got curious — what actually happens between tapping "Place Order" and getting a confirmation? I couldn't answer that, so I built my own version to find out.
-
-**Live API:** https://food-delivery-backend-4rl9.onrender.com  
+  
 **Swagger docs:** https://food-delivery-backend-4rl9.onrender.com/api/docs/
 
 ---
