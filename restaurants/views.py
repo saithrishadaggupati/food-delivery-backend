@@ -1,3 +1,6 @@
+from django.contrib.gis.geos import Point
+from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.measure import D
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -83,3 +86,38 @@ def menu_item_create(request, pk):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def nearby_restaurants(request):
+    lat = request.query_params.get('lat')
+    lng = request.query_params.get('lng')
+    radius_km = float(request.query_params.get('radius', 5))
+
+    if not lat or not lng:
+        return Response(
+            {'error': 'lat and lng query parameters are required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        user_location = Point(float(lng), float(lat), srid=4326)
+    except (ValueError, TypeError):
+        return Response(
+            {'error': 'Invalid lat or lng values'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    restaurants = Restaurant.objects.filter(
+        is_active=True,
+        location__isnull=False,
+        location__dwithin=(user_location, D(km=radius_km))
+    ).annotate(
+        distance=Distance('location', user_location)
+    ).order_by('distance').select_related('owner').prefetch_related('menu_items')
+
+    serializer = RestaurantSerializer(restaurants, many=True)
+    return Response({
+        'count': restaurants.count(),
+        'radius_km': radius_km,
+        'results': serializer.data
+    })

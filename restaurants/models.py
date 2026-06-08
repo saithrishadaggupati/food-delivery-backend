@@ -1,4 +1,9 @@
+from django.contrib.gis.geos import Point
+from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.measure import D
 from django.db import models
+from django.contrib.gis.db import models as gis_models
+from django.contrib.gis.geos import Point
 from users.models import User
 
 
@@ -13,6 +18,7 @@ class Restaurant(models.Model):
     is_active = models.BooleanField(default=True)
     opening_time = models.TimeField()
     closing_time = models.TimeField()
+    location = gis_models.PointField(null=True, blank=True, srid=4326, geography=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
